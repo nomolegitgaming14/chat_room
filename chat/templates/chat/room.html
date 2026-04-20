@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Room: {{ room_name }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Emoji Picker CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.17.0/index.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            background: white;
+        }
+        
+        .chat-header {
+            background: #0084ff;
+            color: white;
+            padding: 12px 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        #messages { 
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .message-avatar {
+            flex-shrink: 0;
+        }
+        
+        .message-avatar img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .message-content {
+            flex: 0 1 auto;
+            max-width: 65%;
+        }
+        
+        .message-own-wrapper {
+            justify-content: flex-end;
+        }
+        
+        .message-own-wrapper .message-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+       /* Regular Message Bubbles */
+        .message-bubble {
+            padding: 8px 12px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            display: inline-block;
+            width: auto;
+        }
+        
+        .message-own .message-bubble {
+            background: #0084ff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-other .message-bubble {
+            background: #0084ff;
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-sender {
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        
+        .message-own .message-bubble {
+            background: #0084ff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-other .message-sender {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .message-image {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        .message-image:hover {
+            opacity: 0.9;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+        
+        .message-own .message-time {
+            text-align: right;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .message-other .message-time {
+            text-align: left;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .message-system {
+            justify-content: center;
+            margin: 8px 0;
+        }
+        
+        .message-system .message-time {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            color: #8e8e9e !important;
+            opacity: 0.7;
+        }
+        .message-system .message-bubble {
+            background: transparent !important;
+            color: #8e8e9e !important;
+            font-size: 11px;
+            font-weight: 500;
+            text-align: center;
+            display: block;
+            padding: 4px 12px;
+            border-radius: 0;
+            box-shadow: none;
+            letter-spacing: 0.3px;
+            text-transform: lowercase;
+        }
+        
+        .message-system .message-bubble::first-letter {
+            text-transform: uppercase;
+        }
+
+        .input-area {
+            background: white;
+            border-top: 1px solid #e4e6eb;
+            padding: 15px 20px;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .icon-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .icon-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .image-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .image-btn:hover {
+            background: #218838;
+        }
+        
+        .emoji-btn {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .emoji-btn:hover {
+            background: #e0a800;
+        }
+        
+        #messageInput { 
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #e4e6eb;
+            border-radius: 25px;
+            font-size: 14px;
+            background: #f0f2f5;
+            transition: all 0.2s;
+        }
+        
+        #messageInput:focus {
+            outline: none;
+            background: white;
+            border-color: #0084ff;
+        }
+        
+        #sendButton { 
+            padding: 10px 25px;
+            background: #0084ff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        #sendButton:hover {
+            background: #0073e6;
+        }
+        
+        .image-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f2f5;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .image-preview.show {
+            display: flex;
+        }
+        
+        .image-preview img {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 8px;
+        }
+        
+        .preview-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-size: 12px;
+            color: #65676b;
+        }
+        
+        .file-size {
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .cancel-btn {
+            background: #e4e6eb;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .cancel-btn:hover {
+            background: #d1d1d1;
+        }
+        
+        .room-avatar {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .room-avatar img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+        
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+        
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            z-index: 1000;
+        }
+        
+        .profile-dropdown:hover .dropdown-menu-custom {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-menu-custom:hover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        #messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        #messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        #messages::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        
+        .modal {
+            z-index: 1050 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'chat_rooms' %}" class="text-white text-decoration-none">
+                        <i class="bi bi-arrow-left-short fs-3"></i>
+                    </a>
+                    <div class="room-avatar" onclick="openImageUploadModal()">
+                        {% if room.room_image %}
+                            <img src="{{ room.room_image.url }}" alt="Room Avatar" id="roomAvatar">
+                        {% else %}
+                            <img src="https://via.placeholder.com/45/0084ff/white?text=📸" alt="Room Avatar" id="roomAvatar">
+                        {% endif %}
+                        <div class="avatar-overlay">
+                            <i class="bi bi-camera-fill" style="font-size: 8px;"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h1 class="fs-5 m-0" id="roomNameDisplay">{{ room_name }}</h1>
+                            <button id="editNameBtn" class="btn btn-sm btn-light text-primary" title="Edit room name">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                        <small class="opacity-75">Group Chat</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold">{{ username }}</span>
+                    <div class="profile-dropdown position-relative">
+                        <button class="btn btn-light btn-sm rounded-circle p-0" style="width: 35px; height: 35px;">
+                            {% if current_user_profile %}
+                                <img src="{{ current_user_profile }}" class="profile-avatar w-100 h-100 rounded-circle">
+                            {% else %}
+                                <i class="bi bi-person fs-5"></i>
+                            {% endif %}
+                        </button>
+                        <div class="dropdown-menu-custom">
+                            <div class="dropdown-item p-2" onclick="openProfileModal()" style="cursor: pointer; color: #333 !important; background: white;">
+                                <i class="bi bi-person-circle me-2" style="color: #333;"></i> 
+                                <span style="color: #333;">My Profile</span>
+                            </div>
+                            <hr class="my-1" style="background: #e4e6eb;">
+                            <a href="{% url 'logout' %}" class="dropdown-item p-2 text-decoration-none" style="color: #333 !important; background: white; display: flex; align-items: center; gap: 8px;">
+                                <i class="bi bi-box-arrow-right me-2" style="color: #333;"></i> 
+                                <span style="color: #333;">Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="messages">
+            {% for message in messages %}
+                {% if message.user.username == username %}
+                    <div class="message-wrapper message-own-wrapper">
+                        <div class="message-content">
+                            <div class="message message-own">
+                                <div class="message-bubble">
+                                    <div class="message-text">
+                                        {% if message.image %}
+                                            <img src="{{ message.image.url }}" class="message-image" onclick="window.open(this.src)">
+                                        {% endif %}
+                                        {% if message.content %}
+                                            {{ message.content }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="message-time">{{ message.timestamp|date:"H:i" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-avatar">
+                            {% if message.user.profile.profile_picture %}
+                                <img src="{{ message.user.profile.profile_picture.url }}" alt="{{ message.user.username }}">
+                            {% else %}
+                                <img src="https://ui-avatars.com/api/?background=0084ff&color=fff&name={{ message.user.username|first }}" alt="{{ message.user.username }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="message-wrapper">
+                        <div class="message-avatar">
+                            {% if message.user.profile.profile_picture %}
+                                <img src="{{ message.user.profile.profile_picture.url }}" alt="{{ message.user.username }}">
+                            {% else %}
+                                <img src="https://ui-avatars.com/api/?background=0084ff&color=fff&name={{ message.user.username|first }}" alt="{{ message.user.username }}">
+                            {% endif %}
+                        </div>
+                        <div class="message-content">
+                            <div class="message message-other">
+                                <div class="message-bubble">
+                                    <div class="message-sender">{{ message.user.username }}</div>
+                                    <div class="message-text">
+                                        {% if message.image %}
+                                            <img src="{{ message.image.url }}" class="message-image" onclick="window.open(this.src)">
+                                        {% endif %}
+                                        {% if message.content %}
+                                            {{ message.content }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="message-time">{{ message.timestamp|date:"H:i" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <div class="input-area">
+            <div class="input-wrapper">
+                <button id="imageIcon" class="icon-btn image-btn" title="Send Picture">📸</button>
+                <button id="emojiBtn" class="icon-btn emoji-btn" title="Insert Emoji">😊</button>
+                <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+                <button id="sendButton" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-send"></i> Send
+                </button>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" class="d-none">
+            <input type="file" id="roomImageInput" accept="image/*" class="d-none">
+            <input type="file" id="profilePicInput" accept="image/*" class="d-none">
+            
+            <div id="imagePreview" class="image-preview">
+                <img id="previewImage" src="">
+                <div class="preview-info">
+                    <div class="file-name" id="previewFileName"></div>
+                    <div class="file-size" id="previewFileSize"></div>
+                </div>
+                <button class="cancel-btn btn-sm" onclick="cancelImage()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Change Room Picture</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="border-2 border-dashed rounded p-4" style="border: 2px dashed #ddd; cursor: pointer;" onclick="document.getElementById('roomImageInput').click()">
+                        <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                        <p class="mt-2">Click to upload a new room picture</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="editNameModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✏️ Edit Room Name</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="newRoomNameInput" class="form-control" placeholder="Enter new room name..." autocomplete="off">
+                    <div id="nameError" class="text-danger mt-2 small" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveNameBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">👤 My Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="position-relative d-inline-block">
+                        {% if current_user_profile %}
+                            <img src="{{ current_user_profile }}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% else %}
+                            <div style="width: 100px; height: 100px; background: #0084ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="bi bi-person fs-1 text-white"></i>
+                            </div>
+                        {% endif %}
+                        <button onclick="openChangePictureModal(); $('#profileModal').modal('hide');" class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0">
+                            <i class="bi bi-camera"></i>
+                        </button>
+                    </div>
+                    <div id="usernameView" style="margin: 10px 0;">
+                        <strong>Username:</strong> 
+                        <span id="usernameText">{{ user.username }}</span>
+                        <button onclick="editUsername()" style="background: none; border: none; cursor: pointer;">✏️</button>
+                    </div>
+                    <div id="usernameEdit" style="display: none; margin: 10px 0;">
+                        <strong>Username:</strong>
+                        <input type="text" id="usernameInput" value="{{ user.username }}" style="padding: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                        <button onclick="saveUsername()" class="btn btn-primary btn-sm">Save</button>
+                        <button onclick="cancelUsername()" class="btn btn-secondary btn-sm">Cancel</button>
+                        <div id="usernameError" class="text-danger small"></div>
+                    </div>
+                    <p><strong>Email:</strong> {{ user.email|default:"Not provided" }}</p>
+                    
+                    <div class="text-start mt-3">
+                        <label class="fw-bold">📝 Bio:</label>
+                        <div id="bioDisplay" class="bg-light p-2 rounded mt-1" style="min-height: 60px;">
+                            {% if current_user_bio %}
+                                <span id="bioTextDisplay">{{ current_user_bio|linebreaksbr }}</span>
+                            {% else %}
+                                <em id="bioTextDisplay" class="text-muted">No bio yet. Click edit to add one!</em>
+                            {% endif %}
+                        </div>
+                        <div id="bioEditor" class="mt-2" style="display: none;">
+                            <textarea id="bioInput" rows="3" class="form-control">{% if current_user_bio %}{{ current_user_bio }}{% endif %}</textarea>
+                            <div class="mt-2">
+                                <button onclick="saveBioInline()" class="btn btn-primary btn-sm">Save</button>
+                                <button onclick="cancelBioEdit()" class="btn btn-secondary btn-sm">Cancel</button>
+                            </div>
+                        </div>
+                        <button onclick="showBioEditor()" class="btn btn-outline-primary btn-sm mt-2">✏️ Edit Bio</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="pictureModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📸 Change Profile Picture</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="border-2 border-dashed rounded p-4" style="border: 2px dashed #ddd; cursor: pointer;" onclick="document.getElementById('profilePicInput').click()">
+                        <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                        <p class="mt-2">Click to upload a new profile picture</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const roomName = "{{ room_name|escapejs }}";
+        const username = "{{ username|escapejs }}";
+        
+        const wsUrl = `ws://${window.location.host}/ws/chat/${encodeURIComponent(roomName)}/`;
+        let ws = new WebSocket(wsUrl);
+        let pendingImage = null;
+        
+        ws.onopen = () => console.log("✅ Connected!");
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const messagesDiv = document.getElementById('messages');
+            let messageWrapper = document.createElement('div');
+            
+            if (data.type === 'system') {
+                messageWrapper.className = 'message message-system';
+                messageWrapper.innerHTML = `<div class="message-bubble"><span class="message-text">${escapeHtml(data.message)}</span><div class="message-time">${data.timestamp || ''}</div></div>`;
+                messagesDiv.appendChild(messageWrapper);
+            } 
+            else if (data.username === username) {
+                messageWrapper.className = 'message-wrapper message-own-wrapper';
+                messageWrapper.innerHTML = `
+                    <div class="message-content">
+                        <div class="message message-own">
+                            <div class="message-bubble">
+                                <div class="message-text">${data.type === 'image' ? `<img src="${data.image_url}" class="message-image" onclick="window.open(this.src)">` : escapeHtml(data.message)}</div>
+                                <div class="message-time">${data.timestamp || 'Just now'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="message-avatar"><img src="${data.profile_picture || 'https://ui-avatars.com/api/?background=0084ff&color=fff&name=' + data.username.charAt(0)}"></div>
+                `;
+                messagesDiv.appendChild(messageWrapper);
+            } 
+            else {
+                messageWrapper.className = 'message-wrapper';
+                messageWrapper.innerHTML = `
+                    <div class="message-avatar"><img src="${data.profile_picture || 'https://ui-avatars.com/api/?background=0084ff&color=fff&name=' + data.username.charAt(0)}"></div>
+                    <div class="message-content">
+                        <div class="message message-other">
+                            <div class="message-bubble">
+                                <div class="message-sender">${escapeHtml(data.username)}</div>
+                                <div class="message-text">${data.type === 'image' ? `<img src="${data.image_url}" class="message-image" onclick="window.open(this.src)">` : escapeHtml(data.message)}</div>
+                                <div class="message-time">${data.timestamp || 'Just now'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                messagesDiv.appendChild(messageWrapper);
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (pendingImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    ws.send(JSON.stringify({ type: 'image', image: e.target.result, username: username }));
+                    cancelImage();
+                    if (message) {
+                        ws.send(JSON.stringify({ type: 'text', message: message, username: username }));
+                        messageInput.value = '';
+                    }
+                };
+                reader.readAsDataURL(pendingImage);
+            } else if (message) {
+                ws.send(JSON.stringify({ type: 'text', message: message, username: username }));
+                messageInput.value = '';
+            }
+        }
+        
+        function selectImage() {
+            document.getElementById('imageInput').click();
+        }
+        
+        function previewImage(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            if (file.size > 5 * 1024 * 1024) { alert("Image too large! Max 5MB."); return; }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('previewFileName').innerHTML = `📷 ${file.name}`;
+                document.getElementById('previewFileSize').innerHTML = `Size: ${(file.size / 1024).toFixed(1)} KB`;
+                document.getElementById('imagePreview').classList.add('show');
+                pendingImage = file;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function cancelImage() {
+            document.getElementById('imagePreview').classList.remove('show');
+            document.getElementById('imageInput').value = '';
+            pendingImage = null;
+        }
+        
+        function openImageUploadModal() {
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+        
+        function openProfileModal() {
+            new bootstrap.Modal(document.getElementById('profileModal')).show();
+        }
+        
+        function openChangePictureModal() {
+            new bootstrap.Modal(document.getElementById('pictureModal')).show();
+        }
+        
+        // Username functions
+        function editUsername() {
+            document.getElementById('usernameView').style.display = 'none';
+            document.getElementById('usernameEdit').style.display = 'block';
+        }
+        
+        function cancelUsername() {
+            document.getElementById('usernameView').style.display = 'block';
+            document.getElementById('usernameEdit').style.display = 'none';
+            document.getElementById('usernameError').innerHTML = '';
+        }
+        
+        function saveUsername() {
+            const newName = document.getElementById('usernameInput').value.trim();
+            if (!newName) {
+                document.getElementById('usernameError').innerHTML = 'Username cannot be empty';
+                return;
+            }
+            
+            fetch('/chat/update_username/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: `username=${encodeURIComponent(newName)}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('usernameText').innerText = newName;
+                    document.getElementById('headerUsername').innerText = newName;
+                    cancelUsername();
+                    showNotification('Username updated! Reloading...');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    document.getElementById('usernameError').innerHTML = data.error;
+                }
+            });
+        }
+        
+        // Bio functions
+        function showBioEditor() {
+            document.getElementById('bioDisplay').style.display = 'none';
+            document.getElementById('bioEditor').style.display = 'block';
+        }
+        
+        function cancelBioEdit() {
+            document.getElementById('bioDisplay').style.display = 'block';
+            document.getElementById('bioEditor').style.display = 'none';
+        }
+        
+        function saveBioInline() {
+            const bioText = document.getElementById('bioInput').value;
+            fetch('/chat/update_bio/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: `bio=${encodeURIComponent(bioText)}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('bioTextDisplay').innerHTML = bioText || '<em class="text-muted">No bio yet</em>';
+                    cancelBioEdit();
+                    showNotification('Bio updated!');
+                }
+            });
+        }
+        
+        // Room functions - FIXED VERSION
+        let currentEditModal = null;
+        
+        function editRoomName() {
+            const currentName = document.getElementById('roomNameDisplay').innerText;
+            document.getElementById('newRoomNameInput').value = currentName;
+            document.getElementById('nameError').style.display = 'none';
+            currentEditModal = new bootstrap.Modal(document.getElementById('editNameModal'));
+            currentEditModal.show();
+        }
+        
+        function saveRoomName() {
+            const currentName = document.getElementById('roomNameDisplay').innerText;
+            const newName = document.getElementById('newRoomNameInput').value.trim();
+            const errorDiv = document.getElementById('nameError');
+            
+            console.log("Save button clicked!");
+            console.log("Current name:", currentName);
+            console.log("New name:", newName);
+            
+            if (!newName) {
+                errorDiv.textContent = 'Room name cannot be empty!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newName.length > 100) {
+                errorDiv.textContent = 'Room name too long! Max 100 characters.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newName === currentName) {
+                if (currentEditModal) currentEditModal.hide();
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            showNotification('Renaming room...');
+            
+            fetch('/chat/update_room_name/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: `old_name=${encodeURIComponent(currentName)}&new_name=${encodeURIComponent(newName)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Response:", data);
+                if (data.success) {
+                    showNotification('Room renamed! Redirecting...');
+                    window.location.href = data.new_url;
+                } else {
+                    errorDiv.textContent = data.error || 'Error updating room name';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Error updating room name';
+                errorDiv.style.display = 'block';
+            });
+        }
+        
+        function uploadRoomImage(file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('room_image', file);
+            formData.append('room_name', roomName);
+            fetch('/chat/upload_room_image/', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(r => r.json())
+            .then(data => { if (data.success) location.reload(); });
+        }
+        
+        function uploadProfilePicture(file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('profile_picture', file);
+            fetch('/chat/upload_profile_picture/', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(r => r.json())
+            .then(data => { if (data.success) location.reload(); });
+        }
+        
+        function getCookie(name) {
+            let value = null;
+            if (document.cookie) {
+                document.cookie.split(';').forEach(c => {
+                    const [key, val] = c.trim().split('=');
+                    if (key === name) value = decodeURIComponent(val);
+                });
+            }
+            return value;
+        }
+        
+        function showNotification(msg) {
+            const n = document.createElement('div');
+            n.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0084ff;color:white;padding:10px 20px;border-radius:20px;z-index:1000';
+            n.innerText = msg;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 2000);
+        }
+        
+        // Event Listeners
+        document.getElementById('sendButton').onclick = sendMessage;
+        document.getElementById('imageIcon').onclick = selectImage;
+        document.getElementById('saveNameBtn').onclick = saveRoomName;
+        document.getElementById('imageInput').onchange = (e) => { if (e.target.files[0]) previewImage(e.target.files[0]); e.target.value = ''; };
+        document.getElementById('roomImageInput').onchange = (e) => { if (e.target.files[0]) uploadRoomImage(e.target.files[0]); e.target.value = ''; };
+        document.getElementById('profilePicInput').onchange = (e) => { if (e.target.files[0]) uploadProfilePicture(e.target.files[0]); e.target.value = ''; };
+        document.getElementById('messageInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        document.getElementById('editNameBtn').onclick = editRoomName;
+        
+        // Enter key support in modal
+        document.getElementById('newRoomNameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveRoomName();
+            }
+        });
+        
+        window.onload = () => { document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight; };
+    </script>
+    
+    <script type="module">
+        import { Picker } from 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.17.0/index.js';
+        
+        const picker = new Picker();
+        let isPickerVisible = false;
+        
+        const emojiBtn = document.getElementById('emojiBtn');
+        const messageInput = document.getElementById('messageInput');
+        
+        emojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = emojiBtn.getBoundingClientRect();
+            
+            if (isPickerVisible) {
+                picker.remove();
+                isPickerVisible = false;
+            } else {
+                document.body.appendChild(picker);
+                picker.style.position = 'fixed';
+                picker.style.bottom = '80px';
+                picker.style.left = rect.left + 'px';
+                picker.style.zIndex = '2000';
+                isPickerVisible = true;
+            }
+        });
+        
+        picker.addEventListener('emoji-click', (event) => {
+            const emoji = event.detail.unicode;
+            const cursorPos = messageInput.selectionStart;
+            const text = messageInput.value;
+            
+            messageInput.value = text.slice(0, cursorPos) + emoji + text.slice(cursorPos);
+            messageInput.focus();
+            
+            const newCursorPos = cursorPos + emoji.length;
+            messageInput.setSelectionRange(newCursorPos, newCursorPos);
+            
+            picker.remove();
+            isPickerVisible = false;
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (isPickerVisible && !picker.contains(e.target) && e.target !== emojiBtn) {
+                picker.remove();
+                isPickerVisible = false;
+            }
+        });
+    </script>
+</body>
+</html>

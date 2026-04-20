@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up - Chat App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .signup-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .errorlist {
+            color: #dc3545;
+            font-size: 12px;
+            list-style: none;
+            margin-top: 5px;
+        }
+        .help-text {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <h2>📝 Create Account</h2>
+        
+        {% if form.errors %}
+            <div class="error-message">
+                Please correct the errors below.
+            </div>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username" value="{{ form.username.value|default:'' }}" required>
+                {% if form.username.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.username.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="help-text">Letters, numbers, and @/./+/-/_ only.</div>
+            </div>
+            
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email (optional)" value="{{ form.email.value|default:'' }}">
+                {% if form.email.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.email.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <input type="password" name="password1" placeholder="Password (min 3 characters)" required>
+                {% if form.password1.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.password1.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="help-text">Any password works as long as it's at least 3 characters</div>
+            </div>
+            
+            <div class="form-group">
+                <input type="password" name="password2" placeholder="Confirm Password" required>
+                {% if form.password2.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.password2.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <button type="submit">Sign Up</button>
+        </form>
+        
+        <div class="login-link">
+            Already have an account? <a href="{% url 'login' %}">Login here</a>
+        </div>
+    </div>
+</body>
+</html>
