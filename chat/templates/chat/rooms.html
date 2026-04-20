@@ -139,6 +139,39 @@
             margin-left: 8px;
         }
 
+        /* Action Buttons Container */
+        .action-buttons {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* JARVIS Button */
+        .jarvis-btn {
+            background: linear-gradient(135deg, #9b59b6 0%, #e84393 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(155,89,182,0.3);
+        }
+
+        .jarvis-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155,89,182,0.4);
+        }
+
         /* Create Room Button */
         .create-room-btn {
             background: linear-gradient(135deg, #0084ff 0%, #00c6ff 100%);
@@ -155,7 +188,6 @@
             justify-content: center;
             gap: 12px;
             width: 100%;
-            margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0,132,255,0.3);
         }
 
@@ -426,13 +458,20 @@
             <p>Be you, be unfiltered</p>
         </div>
         
-        <!-- Large Create Room Button -->
-        <div style="padding: 20px;">
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <!-- JARVIS AI Button -->
+            <a href="{% url 'personal_ai' %}" class="jarvis-btn">
+                <i class="fas fa-robot"></i> 🤖 Talk to JARVIS AI
+            </a>
+            
+            <!-- Create Room Button -->
             <button class="create-room-btn" onclick="openCreateRoomModal()">
                 <i class="fas fa-plus-circle"></i> Create New Room
             </button>
         </div>
         
+        <!-- Rooms List -->
         <ul id="roomsList">
             {% for room in rooms %}
                 <li id="room-{{ room.id }}">

@@ -8,6 +8,9 @@ from django.views.decorators.http import require_http_methods
 from .forms import SignUpForm, RoomEditForm, ProfilePictureForm, ProfileBioForm
 from .models import ChatRoom, Message, UserProfile
 import os
+import google.generativeai as genai
+from django.conf import settings
+import json
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import re
@@ -397,3 +400,72 @@ def create_room(request):
     except Exception as e:
         print(f"Error creating room: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
+    
+
+# Configure Gemini
+genai.configure(api_key="YOUR_GEMINI_API_KEY")  # Better to use environment variable
+
+@csrf_exempt
+def ai_chat(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_message = data.get('message', '')
+            
+            # Get AI response
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(user_message)
+            
+            return JsonResponse({
+                'success': True,
+                'response': response.text
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+        
+@login_required
+def personal_ai(request):
+    """Personal AI assistant view (only for the logged-in user)"""
+    return render(request, 'chat/personal_ai.html', {
+        'username': request.user.username,
+        'current_user_profile': request.user.profile.profile_picture.url if hasattr(request.user, 'profile') and request.user.profile.profile_picture else None
+    })
+
+@csrf_exempt
+@login_required
+def ai_chat_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_message = data.get('message', '')
+            
+            print(f"📨 Received message from {request.user.username}: {user_message}")
+            
+            # Create a simple prompt
+            prompt = f"""You are JARVIS, a helpful AI assistant. 
+User: {user_message}
+Assistant:"""
+            
+            # Use the correct model
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Generate response
+            response = model.generate_content(prompt)
+            
+            print(f"🤖 AI Response: {response.text[:100]}...")
+            
+            return JsonResponse({
+                'success': True,
+                'response': response.text
+            })
+            
+        except Exception as e:
+            print(f"❌ AI Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False, 
+                'error': str(e)
+            })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
