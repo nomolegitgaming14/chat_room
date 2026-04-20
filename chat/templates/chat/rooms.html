@@ -126,6 +126,19 @@
             margin: 5px 0;
         }
 
+        /* Admin Badge */
+        .admin-badge {
+            background: #0084ff;
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+        }
+
         /* Create Room Button */
         .create-room-btn {
             background: linear-gradient(135deg, #0084ff 0%, #00c6ff 100%);
@@ -216,6 +229,9 @@
             font-weight: bold;
             color: #050505;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
         }
         .room-date {
             font-size: 12px;
@@ -226,9 +242,9 @@
             color: white;
             border: none;
             border-radius: 8px;
-            padding: 8px 15px;
+            padding: 8px 12px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
             transition: all 0.2s;
             margin-left: 10px;
@@ -375,6 +391,7 @@
             margin: 10px auto;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -406,13 +423,13 @@
     <div class="rooms-container">
         <div class="rooms-header">
             <h2>🚪 The Chat Rooms</h2>
-            <p>Join or create a conversation</p>
+            <p>Be you, be unfiltered</p>
         </div>
         
         <!-- Large Create Room Button -->
         <div style="padding: 20px;">
             <button class="create-room-btn" onclick="openCreateRoomModal()">
-                <i class="bi bi-plus-circle"></i> Create New Room
+                <i class="fas fa-plus-circle"></i> Create New Room
             </button>
         </div>
         
@@ -426,11 +443,22 @@
                             <div class="room-avatar" style="background: #0084ff; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">📸</div>
                         {% endif %}
                         <div class="room-info">
-                            <div class="room-name">{{ room.name }}</div>
+                            <div class="room-name">
+                                {{ room.name }}
+                                {% if room.admin == user %}
+                                    <span class="admin-badge">
+                                        <i class="fas fa-shield-alt"></i> Admin
+                                    </span>
+                                {% endif %}
+                            </div>
                             <div class="room-date">Created: {{ room.created_at|date:"M d, Y" }}</div>
                         </div>
                     </a>
-                    <button class="delete-btn" onclick="confirmDelete('{{ room.id }}', '{{ room.name|escapejs }}')">Delete</button>
+                    {% if room.admin == user %}
+                        <button class="delete-btn" onclick="confirmDelete('{{ room.id }}', '{{ room.name|escapejs }}')">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    {% endif %}
                 </li>
             {% empty %}
                 <li class="no-rooms">No rooms yet. Create one below!</li>

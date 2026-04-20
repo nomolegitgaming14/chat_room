@@ -68,9 +68,17 @@ def chat_room(request, room_name):
     # Get or create the room
     room, created = ChatRoom.objects.get_or_create(name=room_name)
     
+    # If room was just created, set the creator as admin
+    if created:
+        room.admin = request.user
+        room.save()
+    
     # Ensure the current user has a profile
     if not hasattr(request.user, 'profile'):
         UserProfile.objects.create(user=request.user)
+    
+    # Check if current user is admin
+    is_admin = (room.admin == request.user)
     
     # Get recent messages with user profiles
     messages = Message.objects.filter(room=room).select_related('user', 'user__profile')[:50]
@@ -79,7 +87,6 @@ def chat_room(request, room_name):
     users_in_room = set()
     for message in messages:
         users_in_room.add(message.user)
-        # Ensure each user has a profile
         if not hasattr(message.user, 'profile'):
             UserProfile.objects.create(user=message.user)
     
@@ -90,7 +97,6 @@ def chat_room(request, room_name):
         else:
             user_profiles[user.username] = None
     
-    # Get current user's profile picture
     current_profile = None
     if hasattr(request.user, 'profile') and request.user.profile.profile_picture:
         current_profile = request.user.profile.profile_picture.url
@@ -101,7 +107,8 @@ def chat_room(request, room_name):
         'username': request.user.username,
         'room': room,
         'user_profiles': user_profiles,
-        'current_user_profile': current_profile
+        'current_user_profile': current_profile,
+        'is_admin': is_admin,  # 👈 Add this
     })
 
 @require_http_methods(["POST"])
@@ -112,6 +119,11 @@ def upload_room_image(request):
         
         if room_name and room_image:
             room = ChatRoom.objects.get(name=room_name)
+            
+            # 👈 CHECK IF USER IS ADMIN
+            if room.admin != request.user:
+                return JsonResponse({'success': False, 'error': 'Only the room admin can change the room picture!'})
+            
             # Delete old image if exists
             if room.room_image:
                 old_image_path = room.room_image.path
@@ -174,6 +186,11 @@ def update_room_name(request):
         
         # Get the room and update its name
         room = ChatRoom.objects.get(name=old_name)
+        
+        # 👈 CHECK IF USER IS ADMIN
+        if room.admin != request.user:
+            return JsonResponse({'success': False, 'error': 'Only the room admin can rename the room!'})
+        
         print(f"Found room: {room.name} (ID: {room.id})")
         
         room.name = new_name
@@ -293,6 +310,11 @@ def upload_profile_picture(request):
 def delete_room(request, room_id):
     try:
         room = ChatRoom.objects.get(id=room_id)
+        
+        # 👈 CHECK IF USER IS ADMIN
+        if room.admin != request.user:
+            return JsonResponse({'success': False, 'error': 'Only the room admin can delete the room!'})
+        
         room_name = room.name
         
         # Delete room image if exists
@@ -359,7 +381,12 @@ def create_room(request):
         if ChatRoom.objects.filter(name=room_name).exists():
             return JsonResponse({'success': False, 'error': 'A room with this name already exists!'})
         
-        room = ChatRoom.objects.create(name=room_name)
+        # Create room with current user as admin
+        room = ChatRoom.objects.create(
+            name=room_name,
+            max_members=max_members,
+            admin=request.user  # 👈 Set the creator as admin
+        )
         
         return JsonResponse({
             'success': True,

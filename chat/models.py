@@ -8,6 +8,7 @@ class ChatRoom(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     room_image = models.ImageField(upload_to='room_images/', blank=True, null=True, default=None)
     max_members = models.IntegerField(default=50)
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin_rooms', null=True, blank=True)  # 👈 ADD THIS
     
     def __str__(self):
         return self.name
