@@ -86,7 +86,6 @@
             align-items: flex-end;
         }
         
-       /* Regular Message Bubbles */
         .message-bubble {
             padding: 8px 12px;
             border-radius: 18px;
@@ -114,10 +113,9 @@
             font-weight: bold;
         }
         
-        .message-own .message-bubble {
-            background: #0084ff;
-            color: white;
-            border-bottom-right-radius: 4px;
+        .message-own .message-sender {
+            color: rgba(255,255,255,0.8);
+            text-align: right;
         }
         
         .message-other .message-sender {
@@ -169,6 +167,7 @@
             color: #8e8e9e !important;
             opacity: 0.7;
         }
+        
         .message-system .message-bubble {
             background: transparent !important;
             color: #8e8e9e !important;
@@ -414,7 +413,7 @@
                     <a href="{% url 'chat_rooms' %}" class="text-white text-decoration-none">
                         <i class="bi bi-arrow-left-short fs-3"></i>
                     </a>
-                    <div class="room-avatar" onclick="openImageUploadModal()">
+                    <div class="room-avatar" onclick="openRoomPicturePicker()">
                         {% if room.room_image %}
                             <img src="{{ room.room_image.url }}" alt="Room Avatar" id="roomAvatar">
                         {% else %}
@@ -427,35 +426,14 @@
                     <div>
                         <div class="d-flex align-items-center gap-2">
                             <h1 class="fs-5 m-0" id="roomNameDisplay">{{ room_name }}</h1>
-                            <button id="editNameBtn" class="btn btn-sm btn-light text-primary" title="Edit room name">
-                                <i class="bi bi-pencil"></i>
-                            </button>
                         </div>
                         <small class="opacity-75">Group Chat</small>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold">{{ username }}</span>
-                    <div class="profile-dropdown position-relative">
-                        <button class="btn btn-light btn-sm rounded-circle p-0" style="width: 35px; height: 35px;">
-                            {% if current_user_profile %}
-                                <img src="{{ current_user_profile }}" class="profile-avatar w-100 h-100 rounded-circle">
-                            {% else %}
-                                <i class="bi bi-person fs-5"></i>
-                            {% endif %}
-                        </button>
-                        <div class="dropdown-menu-custom">
-                            <div class="dropdown-item p-2" onclick="openProfileModal()" style="cursor: pointer; color: #333 !important; background: white;">
-                                <i class="bi bi-person-circle me-2" style="color: #333;"></i> 
-                                <span style="color: #333;">My Profile</span>
-                            </div>
-                            <hr class="my-1" style="background: #e4e6eb;">
-                            <a href="{% url 'logout' %}" class="dropdown-item p-2 text-decoration-none" style="color: #333 !important; background: white; display: flex; align-items: center; gap: 8px;">
-                                <i class="bi bi-box-arrow-right me-2" style="color: #333;"></i> 
-                                <span style="color: #333;">Logout</span>
-                            </a>
-                        </div>
-                    </div>
+                    <button id="settingsMenuBtn" class="btn btn-light btn-sm rounded-circle p-0" style="width: 35px; height: 35px;" title="Group Chat Settings">
+                        <i class="bi bi-three-dots-vertical fs-5"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -527,7 +505,7 @@
                 </button>
             </div>
             <input type="file" id="imageInput" accept="image/*" class="d-none">
-            <input type="file" id="roomImageInput" accept="image/*" class="d-none">
+            <input type="file" id="roomImageDirectInput" accept="image/*" class="d-none">
             <input type="file" id="profilePicInput" accept="image/*" class="d-none">
             
             <div id="imagePreview" class="image-preview">
@@ -541,41 +519,85 @@
         </div>
     </div>
     
-    <!-- Modals -->
-    <div class="modal fade" id="imageModal" tabindex="-1">
+    <!-- Group Chat Settings Modal (3-dot menu) - DIRECT FILE PICKER -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Change Room Picture</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="border-2 border-dashed rounded p-4" style="border: 2px dashed #ddd; cursor: pointer;" onclick="document.getElementById('roomImageInput').click()">
-                        <i class="bi bi-cloud-upload fs-1 text-primary"></i>
-                        <p class="mt-2">Click to upload a new room picture</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="modal fade" id="editNameModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">✏️ Edit Room Name</h5>
+                    <h5 class="modal-title"><i class="bi bi-gear"></i> Group Chat Settings</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" id="newRoomNameInput" class="form-control" placeholder="Enter new room name..." autocomplete="off">
-                    <div id="nameError" class="text-danger mt-2 small" style="display: none;"></div>
+                    <!-- Room Picture Section - Direct file picker -->
+                    <div class="settings-section mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-image"></i> Room Picture</h6>
+                        <div class="d-flex align-items-center gap-3 mt-2">
+                            <div>
+                                {% if room.room_image %}
+                                    <img src="{{ room.room_image.url }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" id="settingsRoomPicture">
+                                {% else %}
+                                    <div style="width: 60px; height: 60px; background: #0084ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;" id="settingsRoomPicture">
+                                        <i class="bi bi-camera fs-2"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <button onclick="document.getElementById('roomImageDirectInput').click()" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-upload"></i> Change Picture
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Room Name Section -->
+                    <div class="settings-section mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-chat-dots"></i> Room Name</h6>
+                        <div class="mt-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="settingsRoomName" class="fw-bold">{{ room_name }}</span>
+                                <button onclick="editRoomNameSettings()" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                            </div>
+                            <div id="settingsRoomNameEdit" style="display: none;" class="mt-2">
+                                <div class="input-group">
+                                    <input type="text" id="settingsRoomNameInput" class="form-control" value="{{ room_name }}">
+                                    <button onclick="saveRoomNameSettings()" class="btn btn-primary">Save</button>
+                                    <button onclick="cancelRoomNameSettings()" class="btn btn-secondary">Cancel</button>
+                                </div>
+                                <div id="settingsRoomNameError" class="text-danger small mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Chat Colors / Theme Section -->
+                    <div class="settings-section mb-3">
+                        <h6 class="fw-bold"><i class="bi bi-palette"></i> Chat Theme</h6>
+                        <div class="mt-2">
+                            <div class="d-flex gap-3 flex-wrap">
+                                <button onclick="changeTheme('blue')" class="btn" style="background: #0084ff; color: white; border-radius: 20px; padding: 8px 20px;">
+                                    <i class="bi bi-chat"></i> Blue
+                                </button>
+                                <button onclick="changeTheme('purple')" class="btn" style="background: #9b59b6; color: white; border-radius: 20px; padding: 8px 20px;">
+                                    <i class="bi bi-chat"></i> Purple
+                                </button>
+                                <button onclick="changeTheme('green')" class="btn" style="background: #27ae60; color: white; border-radius: 20px; padding: 8px 20px;">
+                                    <i class="bi bi-chat"></i> Green
+                                </button>
+                                <button onclick="changeTheme('orange')" class="btn" style="background: #e67e22; color: white; border-radius: 20px; padding: 8px 20px;">
+                                    <i class="bi bi-chat"></i> Orange
+                                </button>
+                                <button onclick="changeTheme('pink')" class="btn" style="background: #e84393; color: white; border-radius: 20px; padding: 8px 20px;">
+                                    <i class="bi bi-chat"></i> Pink
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveNameBtn">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -769,8 +791,9 @@
             pendingImage = null;
         }
         
-        function openImageUploadModal() {
-            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        // Direct room picture upload - NO MODAL
+        function openRoomPicturePicker() {
+            document.getElementById('roomImageDirectInput').click();
         }
         
         function openProfileModal() {
@@ -779,6 +802,152 @@
         
         function openChangePictureModal() {
             new bootstrap.Modal(document.getElementById('pictureModal')).show();
+        }
+        
+        // Group Chat Settings Modal functions
+        function openSettingsModal() {
+            new bootstrap.Modal(document.getElementById('settingsModal')).show();
+        }
+        
+        // Room Name edit in settings
+        function editRoomNameSettings() {
+            document.getElementById('settingsRoomName').style.display = 'none';
+            document.getElementById('settingsRoomNameEdit').style.display = 'block';
+            document.getElementById('settingsRoomNameError').innerHTML = '';
+        }
+        
+        function cancelRoomNameSettings() {
+            document.getElementById('settingsRoomName').style.display = 'inline';
+            document.getElementById('settingsRoomNameEdit').style.display = 'none';
+            document.getElementById('settingsRoomNameInput').value = document.getElementById('settingsRoomName').innerText;
+        }
+        
+        function saveRoomNameSettings() {
+            const currentName = document.getElementById('roomNameDisplay').innerText;
+            const newName = document.getElementById('settingsRoomNameInput').value.trim();
+            const errorDiv = document.getElementById('settingsRoomNameError');
+            
+            if (!newName) {
+                errorDiv.innerHTML = 'Room name cannot be empty!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newName.length > 100) {
+                errorDiv.innerHTML = 'Room name too long! Max 100 characters.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (newName === currentName) {
+                cancelRoomNameSettings();
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            
+            fetch('/chat/update_room_name/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: `old_name=${encodeURIComponent(currentName)}&new_name=${encodeURIComponent(newName)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Room renamed! Redirecting...');
+                    window.location.href = data.new_url;
+                } else {
+                    errorDiv.innerHTML = data.error || 'Error updating room name';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                errorDiv.innerHTML = 'Error updating room name';
+                errorDiv.style.display = 'block';
+            });
+        }
+        
+        // Direct room picture upload handler
+        document.getElementById('roomImageDirectInput').onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file!');
+                    return;
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Image too large! Max 2MB.');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('room_image', file);
+                formData.append('room_name', roomName);
+                
+                fetch('/chat/upload_room_image/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Room picture updated!');
+                        location.reload();
+                    } else {
+                        alert('Error uploading image');
+                    }
+                });
+            }
+            this.value = '';
+        };
+        
+        // Theme change function
+        function changeTheme(color) {
+            localStorage.setItem('chatTheme', color);
+            applyTheme(color);
+            showNotification(`Theme changed to ${color}!`);
+        }
+        
+        function applyTheme(color) {
+            const header = document.querySelector('.chat-header');
+            const sendBtn = document.getElementById('sendButton');
+            let primaryColor = '#0084ff';
+            let headerColor = '#0084ff';
+            
+            switch(color) {
+                case 'purple':
+                    primaryColor = '#9b59b6';
+                    headerColor = '#8e44ad';
+                    break;
+                case 'green':
+                    primaryColor = '#27ae60';
+                    headerColor = '#229954';
+                    break;
+                case 'orange':
+                    primaryColor = '#e67e22';
+                    headerColor = '#d35400';
+                    break;
+                case 'pink':
+                    primaryColor = '#e84393';
+                    headerColor = '#c2185b';
+                    break;
+                default:
+                    primaryColor = '#0084ff';
+                    headerColor = '#0084ff';
+            }
+            
+            if (header) header.style.backgroundColor = headerColor;
+            if (sendBtn) sendBtn.style.backgroundColor = primaryColor;
+            
+            document.querySelectorAll('.message-own .message-bubble, .message-other .message-bubble').forEach(bubble => {
+                bubble.style.backgroundColor = primaryColor;
+            });
         }
         
         // Username functions
@@ -847,86 +1016,6 @@
             });
         }
         
-        // Room functions - FIXED VERSION
-        let currentEditModal = null;
-        
-        function editRoomName() {
-            const currentName = document.getElementById('roomNameDisplay').innerText;
-            document.getElementById('newRoomNameInput').value = currentName;
-            document.getElementById('nameError').style.display = 'none';
-            currentEditModal = new bootstrap.Modal(document.getElementById('editNameModal'));
-            currentEditModal.show();
-        }
-        
-        function saveRoomName() {
-            const currentName = document.getElementById('roomNameDisplay').innerText;
-            const newName = document.getElementById('newRoomNameInput').value.trim();
-            const errorDiv = document.getElementById('nameError');
-            
-            console.log("Save button clicked!");
-            console.log("Current name:", currentName);
-            console.log("New name:", newName);
-            
-            if (!newName) {
-                errorDiv.textContent = 'Room name cannot be empty!';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (newName.length > 100) {
-                errorDiv.textContent = 'Room name too long! Max 100 characters.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (newName === currentName) {
-                if (currentEditModal) currentEditModal.hide();
-                return;
-            }
-            
-            errorDiv.style.display = 'none';
-            showNotification('Renaming room...');
-            
-            fetch('/chat/update_room_name/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: `old_name=${encodeURIComponent(currentName)}&new_name=${encodeURIComponent(newName)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Response:", data);
-                if (data.success) {
-                    showNotification('Room renamed! Redirecting...');
-                    window.location.href = data.new_url;
-                } else {
-                    errorDiv.textContent = data.error || 'Error updating room name';
-                    errorDiv.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                errorDiv.textContent = 'Error updating room name';
-                errorDiv.style.display = 'block';
-            });
-        }
-        
-        function uploadRoomImage(file) {
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('room_image', file);
-            formData.append('room_name', roomName);
-            fetch('/chat/upload_room_image/', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-CSRFToken': getCookie('csrftoken') }
-            })
-            .then(r => r.json())
-            .then(data => { if (data.success) location.reload(); });
-        }
-        
         function uploadProfilePicture(file) {
             if (!file) return;
             const formData = new FormData();
@@ -962,21 +1051,19 @@
         // Event Listeners
         document.getElementById('sendButton').onclick = sendMessage;
         document.getElementById('imageIcon').onclick = selectImage;
-        document.getElementById('saveNameBtn').onclick = saveRoomName;
         document.getElementById('imageInput').onchange = (e) => { if (e.target.files[0]) previewImage(e.target.files[0]); e.target.value = ''; };
-        document.getElementById('roomImageInput').onchange = (e) => { if (e.target.files[0]) uploadRoomImage(e.target.files[0]); e.target.value = ''; };
         document.getElementById('profilePicInput').onchange = (e) => { if (e.target.files[0]) uploadProfilePicture(e.target.files[0]); e.target.value = ''; };
         document.getElementById('messageInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-        document.getElementById('editNameBtn').onclick = editRoomName;
+        document.getElementById('settingsMenuBtn').onclick = openSettingsModal;
         
-        // Enter key support in modal
-        document.getElementById('newRoomNameInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                saveRoomName();
+        // Load saved theme on page load
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('chatTheme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
             }
-        });
-        
-        window.onload = () => { document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight; };
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        };
     </script>
     
     <script type="module">
